@@ -1,0 +1,78 @@
+=== (1) Create new user (insert + show) ===
+INSERT 0 1
+ user_id |       email       | username | nickname 
+---------+-------------------+----------+----------
+       7 | grace@example.com | grace    | Grace G.
+(1 row)
+
+
+=== (2a) AUTHORIZED: alice (user 1) creates #random in Acme (ws 1) ===
+INSERT 0 1
+ channel_id | workspace_id |  name  | ch_type | creator_id |         created_at         
+------------+--------------+--------+---------+------------+----------------------------
+          7 |            1 | random | public  |          1 | 2026-04-25 18:49:21.012449
+(1 row)
+
+
+=== (2b) UNAUTHORIZED: dave (user 4) tries to create #spy in Acme (ws 1) ===
+INSERT 0 0
+ rogue_channels 
+----------------
+              0
+(1 row)
+
+
+=== (3) Administrators per workspace ===
+ workspace_id |     name     | username | nickname 
+--------------+--------------+----------+----------
+            1 | Acme Inc.    | alice    | Alice A.
+            1 | Acme Inc.    | bob      | Bobby
+            2 | NYU CS Dept. | dave     | Dave D.
+(3 rows)
+
+
+=== (4) Old (>5d) pending invitees per public channel in NYU (ws 2) ===
+ channel_id |      name       | pending_old_invites 
+------------+-----------------+---------------------
+          4 | grad-admissions |                   1
+          3 | ugrad           |                   1
+(2 rows)
+
+
+=== (5) Messages in channel 3 (#ugrad) chronologically ===
+ message_id |         posted_at         | sender |                                             body                                              
+------------+---------------------------+--------+-----------------------------------------------------------------------------------------------
+          6 | 2026-04-05 18:48:46.40542 | dave   | The new curriculum proposal is ready for review.
+          7 | 2026-04-06 18:48:46.40542 | eve    | I think the geometry section needs work - the perpendicular bisector exercises are confusing.
+          8 | 2026-04-07 18:48:46.40542 | frank  | Agreed, the perpendicular projection lab is too long.
+(3 rows)
+
+
+=== (6) All messages by user 4 (dave) ===
+ message_id |         posted_at         |      ws      |       ch        | ch_type |                              body                              
+------------+---------------------------+--------------+-----------------+---------+----------------------------------------------------------------
+         14 | 2026-04-17 18:48:46.40542 | NYU CS Dept. |                 | direct  | Also, the perpendicular comment in #ugrad earlier was spot-on.
+         12 | 2026-04-16 18:48:46.40542 | NYU CS Dept. |                 | direct  | Quick chat tomorrow?
+          9 | 2026-04-15 18:48:46.40542 | NYU CS Dept. | grad-admissions | public  | Application deadline reminder: Dec 15.
+          6 | 2026-04-05 18:48:46.40542 | NYU CS Dept. | ugrad           | public  | The new curriculum proposal is ready for review.
+         11 | 2026-03-26 18:48:46.40542 | NYU CS Dept. | promotion       | private | Drafting the committee charter.
+(5 rows)
+
+
+=== (7) Messages accessible to user 5 (eve) containing perpendicular ===
+ message_id |         posted_at         |      ws      |       ch        | sender |                                             body                                              
+------------+---------------------------+--------------+-----------------+--------+-----------------------------------------------------------------------------------------------
+         14 | 2026-04-17 18:48:46.40542 | NYU CS Dept. |                 | dave   | Also, the perpendicular comment in #ugrad earlier was spot-on.
+         10 | 2026-04-16 18:48:46.40542 | NYU CS Dept. | grad-admissions | eve    | Got it, I will send out the perpendicular admissions matrix later today.
+          8 | 2026-04-07 18:48:46.40542 | NYU CS Dept. | ugrad           | frank  | Agreed, the perpendicular projection lab is too long.
+          7 | 2026-04-06 18:48:46.40542 | NYU CS Dept. | ugrad           | eve    | I think the geometry section needs work - the perpendicular bisector exercises are confusing.
+(4 rows)
+
+
+=== (7b) Same query for user 6 (frank) -- should NOT see #grad-admissions msg ===
+ message_id |  ch   |                                             body                                              
+------------+-------+-----------------------------------------------------------------------------------------------
+          7 | ugrad | I think the geometry section needs work - the perpendicular bisector exercises are confusing.
+          8 | ugrad | Agreed, the perpendicular projection lab is too long.
+(2 rows)
+

@@ -1,0 +1,86 @@
+NYU Tandon School of Engineering April 14, 2026
+Computer Science and Engineering
+CS6083, Spring 2026
+Project #1 (due April 27)
+The goal in this semester’s course project is to build a web-based collaboration system called snickr, similar to Slack, that
+allows members of a team to build workspaces, create channels within these workspaces, and then communicate within
+these channels. If you are not familiar with Slack, it might be a good idea to try it out in order to better understand some
+of the features described in the following. If you already know Slack, be aware that what you should build may differ in
+some ways from what you are used to in Slack. There are other existing systems that offer similar features, but Slack is the
+closest.
+In this first part of the course project, you will focus on designing a suitable relational schema that can be used to store the
+data in the system. In the second part of the project, you will then build a web-accessible frontend that will allow users to
+use the service via their browsers.
+Now a little more about the system. Users have to be able to sign up for the system by providing an email address, and can
+then choose a username, nickname, and password. Later of course they should be able to log in, use the system, and log out.
+A user can then create workspaces in order to allow efficient communication between a group of people. For example, a
+user may create one workspace for a company that she runs, and another one for the members of her building’s coop board.
+A workspace should have a suitable name and maybe a short description. The creator becomes the administrator of the
+created workspace, though she may later select some other members of the workspace to act as additional administrators.
+Administrators of a group can invite other people, say the people in the company or on the coop board, to join the workspace
+(and can also remove members if needed). The invited people can then join the workspace, if necessary after first signing
+up as users.
+Any user in a workspace can create channels, identified by names. There are three types of channels, public, private,
+and direct. Any user in the workspace can join any public channel, and can then read the messages in the channel and
+add their own messages. Private channels can only be joined by those users in the workspace that are invited by the
+channel creator. Direct channels are for messages between just two users, and can only be seen by those two users. For
+example, in a workspace for faculty members in a university department, there might be public channels for discussions
+on undergraduate education and on graduate admissions, a private channel on hiring and promotion decisions that is only
+accessible to members of the relevant committee, and various direct channels between faculty members as they see fit.
+Each channel contains a sequence of messages posted by channel members, ordered chronologically. A message is basically
+just a piece of text, possibly with images, hyperlinks, emojis, or rich text markup but you do not have to worry about those
+for now. For simplicity, you do not need to support threading within a channel, so each channel is just a simple sequence
+of messages. Also, while Slack has certain features that are only available to paying (premium) customers, you do not have
+to worry about payment issues here. Just assume everything is free. You also do not have to support deletion of channels
+or of individual messages by administrators, though a real system would certainly have this. Finally, for the first part of the
+project, you do not have to worry about notification mechanisms to alert users to new messages.
+So this describes the main ideas behind the system. Before starting your work, you should think about what you envision
+the final system to look like, what data needs to be stored, and what kind of operations need to be performed. For example,
+there should be a login page, a page where a user can sign up for the first time (by supplying an email address and choosing
+a user name), and a page where users can create or update their profiles. Users should be able to make new workspaces
+and channels, invite other users to those workspaces and channels, add additional administrators to their workspaces, join
+workspaces and channels if they receive an invitation, and of course they should be able to read, post, and search for
+messages.
+Project Guidelines: In this first part of the course project, you will have to design the relational database that stores all
+the information about users, workspaces, channels, workspace administrators, invitations and accepted memberships for
+workspaces and channels, and messages. In the second part of the project, you have to design a browser-accessible interface
+for this system. You should use your own database system on your laptop or an internet-accessible server. Use a system
+that supports text operators such as like and contains. Both parts of the project may be done individually or in teams of two
+students. You will receive an email from the TAs asking you to sign up as a group. The second part of the project will be
+due around May 10. Note that the second project builds on top of this one, so you cannot skip this project.
+Two more remarks: First, it is recommended to always store time stamps (time and date) with any action such as posting of
+a message, or creation of workspaces and channels. Second, you should of course not use database permissions or views to
+implement content access restrictions, such as which user can see which message. There should not be a separate DBMS
+account for each user, but the web interface and application itself will log into the database. Thus, the system you implement
+can see all the content, but has to make sure at the application level that each logged-in user is identified through the use of
+cookies in the second part of the project, and then restrict accesses appropriately.
+Project Steps: Following is a list of steps for this part of the project. Note that in this first part, you will only deal with the
+database side of this project - a suitable web interface will be designed in the second project, where you will also have a
+little more freedom in what to exactly implement.
+(a) Design, justify, and create an appropriate database schema for the above situation. Make sure your schema is space
+efficient. Show an ER diagram of your design, and a translation into relational format. Identify keys and foreign key
+constraints. Note that you may have to revisit your design if it turns out later that the design is not suitable. Discuss any
+assumptions you made that impact the model.
+(b) Use a relational database system to create the schema, together with key, foreign key, and other constraints.
+(c) Write SQL queries (or sequences of SQL queries) for the following tasks. You may use suitable placeholder values in
+the statements.
+(1) Create a new user account, with email, name, nickname, and password.
+(2) Create a new public channel inside a workspace by a particular user. (Make sure to check that the user is authorized
+to do so.)
+(3) For each workspace, list all current administrators.
+(4) For each public channel in a given workspace, list the number of users that were invited to join the channel more than
+5 days ago and that have not yet joined.
+(5) For a particular channel, list all messages in chronological order.
+(6) For a particular user, list all messages they have posted in any channel.
+(7) For a particular user, list all messages that are accessible to this user and that contain the keyword “perpendicular” in
+the body of the message. By accessible, we mean that the user must be a member of the workspace and the particular
+channel where the message occurs.
+(d) Populate your database with some sample data, and test the queries you have written in part (c). Make sure to input
+interesting and meaningful data and to test a number of cases. Limit yourself to a few users, workspaces, and channels, but
+make sure there is enough data to generate interesting test cases. It is suggested that you design your test data very carefully.
+Draw and submit a little diagram that shows your test data (not a long list of insert statements) and discuss the structure of
+the data.
+(e) Document and log your design and testing appropriately. Submit a properly documented description and justification
+of your entire design, including ER diagrams, tables, constraints, queries, procedures, and tests on sample data, and a few
+pages of description. This should be a paper of say 8-12 pages with introduction, explanations, ER and other diagrams, etc.,
+that you will then revise and expand in the second part.

@@ -1,0 +1,55 @@
+<%- include('_header', { title: (ch.name || 'direct') + ' - ' + ch.ws_name }) %>
+<p><a href="/w/<%= ch.workspace_id %>">← <%= ch.ws_name %></a></p>
+<h1>
+  <% if (ch.ch_type === 'direct') { %>(direct message)<% } else { %>#<%= ch.name %><% } %>
+  <span class="muted">[<%= ch.ch_type %>]</span>
+</h1>
+
+<section class="cols">
+  <div>
+    <ul class="messages">
+      <% messages.forEach(m => { %>
+        <li>
+          <span class="time"><%= m.posted_at.toLocaleString() %></span>
+          <strong>@<%= m.username %></strong>
+          <div class="body"><%= m.body %></div>
+        </li>
+      <% }); %>
+    </ul>
+
+    <% if (isMember) { %>
+      <form method="post" action="/c/<%= ch.channel_id %>/messages" class="card">
+        <label>New message
+          <textarea name="body" required rows="3"></textarea>
+        </label>
+        <button>Post</button>
+      </form>
+    <% } else if (ch.ch_type === 'public') { %>
+      <form method="post" action="/c/<%= ch.channel_id %>/join">
+        <button>Join channel to post</button>
+      </form>
+    <% } else { %>
+      <p class="muted">You can't post here.</p>
+    <% } %>
+  </div>
+
+  <div>
+    <h2>Members</h2>
+    <ul>
+      <% members.forEach(m => { %><li>@<%= m.username %> — <%= m.nickname %></li><% }); %>
+    </ul>
+
+    <% if (isMember && ch.ch_type !== 'direct') { %>
+      <details>
+        <summary>Invite a workspace member</summary>
+        <form method="post" action="/c/<%= ch.channel_id %>/invite" class="card">
+          <label>User ID <input name="invitee_id" type="number" required></label>
+          <button>Invite</button>
+        </form>
+        <p class="muted">(Tip: user IDs are visible on the workspace page in the future; for now use IDs 1-6.)</p>
+      </details>
+    <% } %>
+  </div>
+</section>
+
+<%- include('_footer') %>

@@ -1,0 +1,12 @@
+<%- include('_header', { title: 'Register' }) %>
+<h1>Create your snickr account</h1>
+<% if (err) { %><p class="err"><%= err %></p><% } %>
+<form method="post" action="/register" class="card">
+  <label>Email     <input name="email"    type="email" value="<%= form.email    || '' %>" required></label>
+  <label>Username  <input name="username"               value="<%= form.username || '' %>" required></label>
+  <label>Nickname  <input name="nickname"               value="<%= form.nickname || '' %>" required></label>
+  <label>Password  <input name="password" type="password" required></label>
+  <button>Register</button>
+</form>
+<p>Already have an account? <a href="/login">Log in</a></p>
+<%- include('_footer') %>

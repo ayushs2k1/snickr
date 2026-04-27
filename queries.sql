@@ -5,9 +5,10 @@
 
 -- ---------------------------------------------------------------------
 -- (1) Create a new user account.
+-- Example: Create user 'grace'
 -- ---------------------------------------------------------------------
 INSERT INTO Users (email, username, nickname, password_hash)
-VALUES (:email, :username, :nickname, :password_hash);
+VALUES ('grace@example.com', 'grace', 'Grace G.', 'hash_grace');
 
 -- ---------------------------------------------------------------------
 -- (2) Create a new public channel inside a workspace by a particular
@@ -16,18 +17,19 @@ VALUES (:email, :username, :nickname, :password_hash);
 --     created when the authorization check succeeds.
 --     A second statement adds the creator as the first channel member.
 -- ---------------------------------------------------------------------
+-- Example: alice (user 1) creates a public channel in Acme Inc. (workspace 1)
 WITH new_ch AS (
     INSERT INTO Channel (workspace_id, name, ch_type, creator_id)
-    SELECT :workspace_id, :channel_name, 'public', :user_id
+    SELECT 1, 'announcements', 'public', 1
     WHERE EXISTS (
         SELECT 1 FROM WorkspaceMember
-        WHERE workspace_id = :workspace_id
-          AND user_id      = :user_id
+        WHERE workspace_id = 1
+          AND user_id      = 1
     )
     RETURNING channel_id
 )
 INSERT INTO ChannelMember (channel_id, user_id)
-SELECT channel_id, :user_id FROM new_ch;
+SELECT channel_id, 1 FROM new_ch;
 
 -- ---------------------------------------------------------------------
 -- (3) For each workspace, list all current administrators.
@@ -48,12 +50,13 @@ ORDER BY w.workspace_id, u.username;
 --     users that were invited more than 5 days ago and have not yet
 --     joined.
 -- ---------------------------------------------------------------------
+-- Example: Get old pending invitees for public channels in NYU CS Dept. (workspace 2)
 SELECT c.channel_id,
        c.name AS channel_name,
        COUNT(*) AS pending_old_invites
 FROM   Channel           c
 JOIN   ChannelInvitation ci ON ci.channel_id = c.channel_id
-WHERE  c.workspace_id = :workspace_id
+WHERE  c.workspace_id = 2
   AND  c.ch_type      = 'public'
   AND  ci.status      = 'pending'
   AND  ci.invited_at  < CURRENT_TIMESTAMP - INTERVAL '5 days'
@@ -68,19 +71,21 @@ ORDER BY c.name;
 -- ---------------------------------------------------------------------
 -- (5) For a particular channel, list all messages in chronological order.
 -- ---------------------------------------------------------------------
+-- Example: Get all messages in the #ugrad channel (channel 3)
 SELECT m.message_id,
        m.posted_at,
        u.username AS sender,
        m.body
 FROM   Message m
 JOIN   Users   u ON u.user_id = m.sender_id
-WHERE  m.channel_id = :channel_id
+WHERE  m.channel_id = 3
 ORDER BY m.posted_at ASC, m.message_id ASC;
 
 -- ---------------------------------------------------------------------
 -- (6) For a particular user, list all messages they have posted in
 --     any channel.
 -- ---------------------------------------------------------------------
+-- Example: Get all messages posted by dave (user 4)
 SELECT m.message_id,
        m.posted_at,
        w.name AS workspace_name,
@@ -90,7 +95,7 @@ SELECT m.message_id,
 FROM   Message    m
 JOIN   Channel    c ON c.channel_id   = m.channel_id
 JOIN   Workspace  w ON w.workspace_id = c.workspace_id
-WHERE  m.sender_id = :user_id
+WHERE  m.sender_id = 4
 ORDER BY m.posted_at DESC;
 
 -- ---------------------------------------------------------------------
@@ -102,6 +107,7 @@ ORDER BY m.posted_at DESC;
 --         first for any well-formed dataset, but we check both
 --         explicitly to match the spec).
 -- ---------------------------------------------------------------------
+-- Example: Get messages accessible to eve (user 5) containing 'perpendicular'
 SELECT m.message_id,
        m.posted_at,
        w.name  AS workspace_name,
@@ -112,9 +118,9 @@ FROM   Message          m
 JOIN   Channel          c       ON c.channel_id    = m.channel_id
 JOIN   Workspace        w       ON w.workspace_id  = c.workspace_id
 JOIN   ChannelMember    cm      ON cm.channel_id   = c.channel_id
-                                AND cm.user_id     = :user_id
+                                AND cm.user_id     = 5
 JOIN   WorkspaceMember  wm      ON wm.workspace_id = w.workspace_id
-                                AND wm.user_id     = :user_id
+                                AND wm.user_id     = 5
 JOIN   Users            sender  ON sender.user_id  = m.sender_id
 WHERE  m.body ILIKE '%perpendicular%'
 ORDER BY m.posted_at DESC;

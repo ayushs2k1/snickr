@@ -1,0 +1,20 @@
+<%- include('_header', { title: 'Search', q: q }) %>
+<h1>Search</h1>
+<% if (!q) { %>
+  <p class="muted">Type a keyword in the search bar above.</p>
+<% } else { %>
+  <p>Results for "<strong><%= q %></strong>" (<%= results.length %>)</p>
+  <ul class="messages">
+    <% results.forEach(m => { %>
+      <li>
+        <span class="time"><%= m.posted_at.toLocaleString() %></span>
+        <strong>@<%= m.sender %></strong>
+        in
+        <a href="/w/<%= m.workspace_id %>"><%= m.workspace_name %></a> /
+        <a href="/c/<%= m.channel_id %>"><% if (m.ch_type === 'direct') { %>(direct)<% } else { %>#<%= m.channel_name %><% } %></a>
+        <div class="body"><%= m.body %></div>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>
+<%- include('_footer') %>

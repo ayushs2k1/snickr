@@ -1,0 +1,71 @@
+<%- include('_header', { title: ws.name }) %>
+<p><a href="/">← all workspaces</a></p>
+<h1><%= ws.name %> <% if (ws.is_admin) { %><span class="badge">admin</span><% } %></h1>
+<% if (ws.description) { %><p class="muted"><%= ws.description %></p><% } %>
+
+<section class="cols">
+  <div>
+    <h2>Channels</h2>
+    <ul class="ch-list">
+      <% channels.forEach(c => { %>
+        <li>
+          <a href="/c/<%= c.channel_id %>">
+            <% if (c.ch_type === 'direct') { %>(direct)<% } else { %>#<%= c.name %><% } %>
+          </a>
+          <span class="muted">[<%= c.ch_type %>]</span>
+          <% if (!c.is_member && c.ch_type === 'public') { %><span class="muted">- not joined</span><% } %>
+        </li>
+      <% }); %>
+    </ul>
+
+    <details>
+      <summary>Create a channel</summary>
+      <form method="post" action="/w/<%= ws.workspace_id %>/channels" class="card">
+        <label>Name <input name="name"></label>
+        <label>Type
+          <select name="ch_type">
+            <option value="public">public</option>
+            <option value="private">private</option>
+            <option value="direct">direct</option>
+          </select>
+        </label>
+        <label>Direct partner (only for "direct")
+          <select name="direct_with">
+            <option value="">(none)</option>
+            <% members.forEach(m => { if (m.user_id !== me.user_id) { %>
+              <option value="<%= m.user_id %>">@<%= m.username %> (<%= m.nickname %>)</option>
+            <% } }); %>
+          </select>
+        </label>
+        <button>Create</button>
+      </form>
+    </details>
+  </div>
+
+  <div>
+    <h2>Members</h2>
+    <ul>
+      <% members.forEach(m => { %>
+        <li>@<%= m.username %> — <%= m.nickname %><% if (m.is_admin) { %> <span class="badge">admin</span><% } %></li>
+      <% }); %>
+    </ul>
+
+    <% if (ws.is_admin) { %>
+      <details>
+        <summary>Invite a user (by email)</summary>
+        <form method="post" action="/w/<%= ws.workspace_id %>/invite" class="card">
+          <label>Email <input name="email" type="email" required></label>
+          <button>Send invite</button>
+        </form>
+      </details>
+      <h3>Outstanding invitations</h3>
+      <ul>
+        <% pendingInvites.forEach(i => { %>
+          <li><%= i.invitee_email %> — <%= i.status %> (<%= i.invited_at.toLocaleString() %>)</li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </div>
+</section>
+
+<%- include('_footer') %>

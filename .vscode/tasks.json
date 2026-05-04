@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [{
+		"label": "Run web app",
+		"type": "shell",
+		"command": "npm",
+		"args": [
+			"start"
+		],
+		"options": {
+			"cwd": "${workspaceFolder}/web"
+		},
+		"isBackground": true,
+		"problemMatcher": [],
+		"group": "build"
+	}]
+}

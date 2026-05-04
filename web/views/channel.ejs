@@ -42,11 +42,21 @@
     <% if (isMember && ch.ch_type !== 'direct') { %>
       <details>
         <summary>Invite a workspace member</summary>
-        <form method="post" action="/c/<%= ch.channel_id %>/invite" class="card">
-          <label>User ID <input name="invitee_id" type="number" required></label>
-          <button>Invite</button>
-        </form>
-        <p class="muted">(Tip: user IDs are visible on the workspace page in the future; for now use IDs 1-6.)</p>
+        <% if (wsMembers.length) { %>
+          <form method="post" action="/c/<%= ch.channel_id %>/invite" class="card">
+            <label>User
+              <select name="invitee_id" required>
+                <option value="">— select —</option>
+                <% wsMembers.forEach(m => { %>
+                  <option value="<%= m.user_id %>">@<%= m.username %> (<%= m.nickname %>)</option>
+                <% }); %>
+              </select>
+            </label>
+            <button>Invite</button>
+          </form>
+        <% } else { %>
+          <p class="muted">All workspace members are already in this channel.</p>
+        <% } %>
       </details>
     <% } %>
   </div>

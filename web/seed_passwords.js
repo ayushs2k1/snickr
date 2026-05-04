@@ -8,7 +8,7 @@ const db = require('./db');
   const hash = await bcrypt.hash('password', 12);
   const r = await db.query(
     `UPDATE Users SET password_hash = $1
-       WHERE username IN ('alice','bob','carol','dave','eve','frank')`,
+       WHERE username IN ('alice','bob','carol','dave','eve','frank','subh')`,
     [hash]
   );
   console.log(`Updated ${r.rowCount} seed users.  Login with username + password "password".`);

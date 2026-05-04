@@ -193,6 +193,7 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
 
   // Outstanding invitations - shown to admins only
   let pendingInvites = [];
+  let allEmails = [];
   if (ws.rows[0].is_admin) {
     const r = await db.query(
       `SELECT invitee_email, invited_at, status
@@ -202,9 +203,21 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
       [wsId]
     );
     pendingInvites = r.rows;
+
+    // All users not already members of this workspace (for invite datalist)
+    const e = await db.query(
+      `SELECT u.email, u.username FROM Users u
+        WHERE NOT EXISTS (
+          SELECT 1 FROM WorkspaceMember wm
+           WHERE wm.workspace_id = $1 AND wm.user_id = u.user_id
+        )
+        ORDER BY u.email`,
+      [wsId]
+    );
+    allEmails = e.rows;
   }
 
-  res.render('workspace', { ws: ws.rows[0], channels: channels.rows, members: members.rows, pendingInvites });
+  res.render('workspace', { ws: ws.rows[0], channels: channels.rows, members: members.rows, pendingInvites, allEmails });
 });
 
 // Invite a user to a workspace (admin only)
@@ -358,11 +371,27 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
     [chId]
   );
 
+  // Workspace members not yet in this channel (for invite dropdown)
+  const wsMembers = await db.query(
+    `SELECT u.user_id, u.username, u.nickname
+       FROM WorkspaceMember wm
+       JOIN Users u ON u.user_id = wm.user_id
+      WHERE wm.workspace_id = $1
+        AND u.user_id != $2
+        AND NOT EXISTS (
+          SELECT 1 FROM ChannelMember cm
+           WHERE cm.channel_id = $3 AND cm.user_id = u.user_id
+        )
+      ORDER BY u.username`,
+    [ch.rows[0].workspace_id, me, chId]
+  );
+
   res.render('channel', {
     ch: ch.rows[0],
     isMember: !!isMember.rows[0],
     messages: messages.rows,
     members: members.rows,
+    wsMembers: wsMembers.rows,
   });
 });
 

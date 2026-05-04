@@ -54,7 +54,15 @@
       <details>
         <summary>Invite a user (by email)</summary>
         <form method="post" action="/w/<%= ws.workspace_id %>/invite" class="card">
-          <label>Email <input name="email" type="email" required></label>
+          <label>Email
+            <input name="email" type="email" list="email-suggestions"
+                   placeholder="type to search..." autocomplete="off" required>
+            <datalist id="email-suggestions">
+              <% allEmails.forEach(u => { %>
+                <option value="<%= u.email %>"><%= u.username %> — <%= u.email %></option>
+              <% }); %>
+            </datalist>
+          </label>
           <button>Send invite</button>
         </form>
       </details>

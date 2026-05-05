@@ -90,6 +90,37 @@ app.post('/login', async (req, res) => {
 app.post('/logout', (req, res) => req.session.destroy(() => res.redirect('/login')));
 
 // ---------------------------------------------------------------------
+// Forgot / Reset password  (no email server: verify username + email)
+// ---------------------------------------------------------------------
+app.get('/reset-password', (req, res) =>
+  res.render('reset_password', { err: null, success: null, form: {} })
+);
+
+app.post('/reset-password', async (req, res) => {
+  const { username, email, password, confirm } = req.body;
+  if (!username || !email || !password || !confirm) {
+    return res.render('reset_password', { err: 'All fields are required.', success: null, form: req.body });
+  }
+  if (password !== confirm) {
+    return res.render('reset_password', { err: 'Passwords do not match.', success: null, form: req.body });
+  }
+  if (password.length < 4) {
+    return res.render('reset_password', { err: 'Password must be at least 4 characters.', success: null, form: req.body });
+  }
+  // Verify username + email match
+  const r = await db.query(
+    `SELECT user_id FROM Users WHERE username = $1 AND email = $2`,
+    [username, email]
+  );
+  if (!r.rows[0]) {
+    return res.render('reset_password', { err: 'No account found with that username and email.', success: null, form: req.body });
+  }
+  const hash = await bcrypt.hash(password, 12);
+  await db.query(`UPDATE Users SET password_hash = $1 WHERE user_id = $2`, [hash, r.rows[0].user_id]);
+  res.render('reset_password', { err: null, success: 'Password reset successfully. You can now log in.', form: {} });
+});
+
+// ---------------------------------------------------------------------
 // Home: workspaces I'm a member of + workspace invitations addressed to my email
 // ---------------------------------------------------------------------
 app.get('/', requireLogin, async (req, res) => {

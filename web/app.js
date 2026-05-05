@@ -56,6 +56,7 @@ app.post('/register', async (req, res) => {
   }
   try {
     const hash = await bcrypt.hash(password, 12);
+    // Create new user account with hashed password
     const r = await db.query(
       `INSERT INTO Users(email, username, nickname, password_hash)
        VALUES ($1, $2, $3, $4) RETURNING user_id`,
@@ -75,6 +76,7 @@ app.get('/login', (req, res) => res.render('login', { err: null, form: {} }));
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+  // Look up user by username
   const r = await db.query(
     `SELECT user_id, username, nickname, password_hash
        FROM Users WHERE username = $1`,
@@ -107,7 +109,7 @@ app.post('/reset-password', async (req, res) => {
   if (password.length < 4) {
     return res.render('reset_password', { err: 'Password must be at least 4 characters.', success: null, form: req.body });
   }
-  // Verify username + email match
+  // Verify username and email belong to the same account
   const r = await db.query(
     `SELECT user_id FROM Users WHERE username = $1 AND email = $2`,
     [username, email]
@@ -116,6 +118,7 @@ app.post('/reset-password', async (req, res) => {
     return res.render('reset_password', { err: 'No account found with that username and email.', success: null, form: req.body });
   }
   const hash = await bcrypt.hash(password, 12);
+  // Update password hash
   await db.query(`UPDATE Users SET password_hash = $1 WHERE user_id = $2`, [hash, r.rows[0].user_id]);
   res.render('reset_password', { err: null, success: 'Password reset successfully. You can now log in.', form: {} });
 });
@@ -125,6 +128,7 @@ app.post('/reset-password', async (req, res) => {
 // ---------------------------------------------------------------------
 app.get('/', requireLogin, async (req, res) => {
   const me = req.session.user.user_id;
+  // Get all workspaces you're a member of
   const ws = await db.query(
     `SELECT w.workspace_id, w.name, w.description, wm.is_admin
        FROM Workspace w
@@ -133,6 +137,7 @@ app.get('/', requireLogin, async (req, res) => {
       ORDER BY w.name`,
     [me]
   );
+  // Get pending workspace invitations sent to your email
   const wsInvites = await db.query(
     `SELECT wi.workspace_id, w.name, wi.invited_at, u.username AS invited_by
        FROM WorkspaceInvitation wi
@@ -143,6 +148,7 @@ app.get('/', requireLogin, async (req, res) => {
       ORDER BY wi.invited_at DESC`,
     [me]
   );
+  // Get pending channel invitations sent to you
   const chInvites = await db.query(
     `SELECT ci.channel_id, c.name AS channel_name, c.ch_type,
             w.workspace_id, w.name AS workspace_name,
@@ -167,11 +173,13 @@ app.post('/workspaces', requireLogin, async (req, res) => {
   if (!name) { flash(req, 'err', 'Workspace name required.'); return res.redirect('/'); }
   try {
     await db.tx(async (c) => {
+      // Create workspace
       const r = await c.query(
         `INSERT INTO Workspace(name, description, creator_id)
          VALUES ($1, $2, $3) RETURNING workspace_id`,
         [name, description || null, me]
       );
+      // Add creator as admin member (transaction ensures both succeed or both fail)
       await c.query(
         `INSERT INTO WorkspaceMember(workspace_id, user_id, is_admin)
          VALUES ($1, $2, TRUE)`,
@@ -191,6 +199,7 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
   const wsId = +req.params.wsId;
   if (!Number.isInteger(wsId)) return res.status(400).send('bad id');
 
+  // Get workspace details and verify you're a member
   const ws = await db.query(
     `SELECT w.*, wm.is_admin
        FROM Workspace w
@@ -200,7 +209,8 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
   );
   if (!ws.rows[0]) return res.status(404).render('error', { msg: 'Workspace not found or you are not a member.' });
 
-  // Channels visible to me: every public channel of the ws + private/direct ones where I'm a member.
+  // Get channels you can see: public channels + private/direct where you're a member
+  // LEFT JOIN ensures public channels show even if you're not a member
   const channels = await db.query(
     `SELECT c.channel_id, c.name, c.ch_type,
             (cm.user_id IS NOT NULL) AS is_member
@@ -213,6 +223,7 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
     [wsId, me]
   );
 
+  // Get all workspace members
   const members = await db.query(
     `SELECT u.user_id, u.username, u.nickname, wm.is_admin
        FROM WorkspaceMember wm
@@ -226,6 +237,7 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
   let pendingInvites = [];
   let allEmails = [];
   if (ws.rows[0].is_admin) {
+    // Get all workspace invitations (pending, accepted, declined)
     const r = await db.query(
       `SELECT invitee_email, invited_at, status
          FROM WorkspaceInvitation
@@ -235,7 +247,8 @@ app.get('/w/:wsId', requireLogin, async (req, res) => {
     );
     pendingInvites = r.rows;
 
-    // All users not already members of this workspace (for invite datalist)
+    // Get users NOT in this workspace (for invite dropdown)
+    // NOT EXISTS excludes users who already have a WorkspaceMember row
     const e = await db.query(
       `SELECT u.email, u.username FROM Users u
         WHERE NOT EXISTS (
@@ -258,6 +271,7 @@ app.post('/w/:wsId/invite', requireLogin, async (req, res) => {
   const email = (req.body.email || '').trim();
   if (!email) { flash(req, 'err', 'Email required.'); return res.redirect(`/w/${wsId}`); }
 
+  // Check if caller is an admin
   const adm = await db.query(
     `SELECT 1 FROM WorkspaceMember WHERE workspace_id=$1 AND user_id=$2 AND is_admin`,
     [wsId, me]
@@ -265,6 +279,8 @@ app.post('/w/:wsId/invite', requireLogin, async (req, res) => {
   if (!adm.rows[0]) return res.status(403).send('forbidden');
 
   try {
+    // Send invitation (or reset existing one to pending)
+    // ON CONFLICT allows re-inviting the same email
     await db.query(
       `INSERT INTO WorkspaceInvitation(workspace_id, invitee_email, invited_by, status)
        VALUES ($1, $2, $3, 'pending')
@@ -287,6 +303,8 @@ app.post('/invitations/workspace/:wsId/:action', requireLogin, async (req, res) 
   if (!['accept','decline'].includes(action)) return res.status(400).send('bad action');
 
   await db.tx(async (c) => {
+    // Mark invitation as accepted/declined
+    // Subquery matches your email to the invitation
     const r = await c.query(
       `UPDATE WorkspaceInvitation
           SET status=$3, responded_at=CURRENT_TIMESTAMP
@@ -297,6 +315,7 @@ app.post('/invitations/workspace/:wsId/:action', requireLogin, async (req, res) 
       [wsId, me, action === 'accept' ? 'accepted' : 'declined']
     );
     if (action === 'accept' && r.rows[0]) {
+      // Add you as a workspace member (transaction ensures both succeed or both fail)
       await c.query(
         `INSERT INTO WorkspaceMember(workspace_id, user_id, is_admin)
          VALUES ($1, $2, FALSE)
@@ -317,7 +336,7 @@ app.post('/w/:wsId/channels', requireLogin, async (req, res) => {
   const wsId = +req.params.wsId;
   const { name, ch_type, direct_with } = req.body;
 
-  // authorise: caller must be a member of the workspace
+  // Check if you're a workspace member
   const m = await db.query(
     `SELECT 1 FROM WorkspaceMember WHERE workspace_id=$1 AND user_id=$2`,
     [wsId, me]
@@ -333,17 +352,19 @@ app.post('/w/:wsId/channels', requireLogin, async (req, res) => {
     const newId = await db.tx(async (c) => {
       let chName = name || null;
       if (ch_type === 'direct') chName = null;
+      // Create channel
       const r = await c.query(
         `INSERT INTO Channel(workspace_id, name, ch_type, creator_id)
          VALUES ($1, $2, $3, $4) RETURNING channel_id`,
         [wsId, chName, ch_type, me]
       );
       const chId = r.rows[0].channel_id;
+      // Add creator as a member
       await c.query(
         `INSERT INTO ChannelMember(channel_id, user_id) VALUES ($1, $2)`,
         [chId, me]
       );
-      // for 'direct', the second user must already be in the workspace
+      // For direct channels: verify partner is in workspace, then add them
       if (ch_type === 'direct') {
         const other = +direct_with;
         if (!Number.isInteger(other) || other === me) throw new Error('bad direct partner');
@@ -369,6 +390,9 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
   const chId = +req.params.chId;
   if (!Number.isInteger(chId)) return res.status(400).send('bad id');
 
+  // Get channel details and enforce access control in SQL
+  // Public channels: visible to all workspace members
+  // Private/direct: only visible if you're a ChannelMember
   const ch = await db.query(
     `SELECT c.*, w.name AS ws_name
        FROM Channel c
@@ -382,11 +406,13 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
   );
   if (!ch.rows[0]) return res.status(404).render('error', { msg: 'Channel not found or not accessible.' });
 
+  // Check if you're a channel member (used to show/hide message form)
   const isMember = await db.query(
     `SELECT 1 FROM ChannelMember WHERE channel_id=$1 AND user_id=$2`,
     [chId, me]
   );
 
+  // Get all messages in this channel
   const messages = await db.query(
     `SELECT m.message_id, m.body, m.posted_at, u.username, u.nickname
        FROM Message m JOIN Users u ON u.user_id = m.sender_id
@@ -395,6 +421,7 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
     [chId]
   );
 
+  // Get all channel members
   const members = await db.query(
     `SELECT u.user_id, u.username, u.nickname
        FROM ChannelMember cm JOIN Users u ON u.user_id = cm.user_id
@@ -402,7 +429,8 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
     [chId]
   );
 
-  // Workspace members not yet in this channel (for invite dropdown)
+  // Get workspace members NOT in this channel (for invite dropdown)
+  // NOT EXISTS excludes users already in the channel
   const wsMembers = await db.query(
     `SELECT u.user_id, u.username, u.nickname
        FROM WorkspaceMember wm
@@ -430,6 +458,7 @@ app.get('/c/:chId', requireLogin, async (req, res) => {
 app.post('/c/:chId/join', requireLogin, async (req, res) => {
   const me = req.session.user.user_id;
   const chId = +req.params.chId;
+  // Verify channel is public and you're a workspace member
   const ok = await db.query(
     `SELECT 1 FROM Channel c
        JOIN WorkspaceMember wm ON wm.workspace_id = c.workspace_id AND wm.user_id = $2
@@ -437,6 +466,7 @@ app.post('/c/:chId/join', requireLogin, async (req, res) => {
     [chId, me]
   );
   if (!ok.rows[0]) return res.status(403).send('forbidden');
+  // Add you as a channel member
   await db.query(
     `INSERT INTO ChannelMember(channel_id, user_id) VALUES ($1, $2)
      ON CONFLICT DO NOTHING`,
@@ -452,7 +482,8 @@ app.post('/c/:chId/invite', requireLogin, async (req, res) => {
   const inviteeId = +req.body.invitee_id;
   if (!Number.isInteger(inviteeId)) { flash(req, 'err', 'Pick a user.'); return res.redirect(`/c/${chId}`); }
 
-  // caller must be a member of the channel; invitee must be a member of the workspace
+  // Verify: you're a channel member AND invitee is a workspace member
+  // Single query checks both conditions
   const ok = await db.query(
     `SELECT 1
        FROM Channel c
@@ -463,6 +494,7 @@ app.post('/c/:chId/invite', requireLogin, async (req, res) => {
   );
   if (!ok.rows[0]) return res.status(403).send('invitee must be a workspace member');
 
+  // Send channel invitation (or reset existing one to pending)
   await db.query(
     `INSERT INTO ChannelInvitation(channel_id, invitee_id, invited_by)
      VALUES ($1, $2, $3)
@@ -482,6 +514,7 @@ app.post('/invitations/channel/:chId/:action', requireLogin, async (req, res) =>
   if (!['accept','decline'].includes(action)) return res.status(400).send('bad');
 
   await db.tx(async (c) => {
+    // Mark invitation as accepted/declined
     const r = await c.query(
       `UPDATE ChannelInvitation
           SET status=$3, responded_at=CURRENT_TIMESTAMP
@@ -490,6 +523,7 @@ app.post('/invitations/channel/:chId/:action', requireLogin, async (req, res) =>
       [chId, me, action === 'accept' ? 'accepted' : 'declined']
     );
     if (action === 'accept' && r.rows[0]) {
+      // Add you as a channel member (transaction ensures both succeed or both fail)
       await c.query(
         `INSERT INTO ChannelMember(channel_id, user_id) VALUES ($1, $2)
          ON CONFLICT DO NOTHING`,
@@ -509,14 +543,16 @@ app.post('/c/:chId/messages', requireLogin, async (req, res) => {
   const body = (req.body.body || '').trim();
   if (!body) return res.redirect(`/c/${chId}`);
 
-  // Authorisation check + insert in one transaction
+  // Authorization check + insert in one transaction
   try {
     await db.tx(async (c) => {
+      // Verify you're a channel member
       const ok = await c.query(
         `SELECT 1 FROM ChannelMember WHERE channel_id=$1 AND user_id=$2`,
         [chId, me]
       );
       if (!ok.rows[0]) throw new Error('not a member');
+      // Post the message
       await c.query(
         `INSERT INTO Message(channel_id, sender_id, body) VALUES ($1, $2, $3)`,
         [chId, me, body]
@@ -537,6 +573,9 @@ app.get('/search', requireLogin, async (req, res) => {
   const q = (req.query.q || '').trim();
   let results = [];
   if (q) {
+    // Search messages with keyword (case-insensitive)
+    // Double JOIN on ChannelMember and WorkspaceMember ensures you only see
+    // messages from channels and workspaces you belong to
     const r = await db.query(
       `SELECT m.message_id, m.posted_at, m.body,
               w.workspace_id, w.name AS workspace_name,

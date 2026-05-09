@@ -50,28 +50,6 @@ Navigate to your localhost and login with any test user.
 
 ## Project Structure
 
-```
-snickr/
-├── schema.sql              # Database schema (Project #1)
-├── sample_data.sql         # Test data
-├── queries.sql             # 7 required queries
-├── test_queries.sql        # Query validation
-├── test_results.txt        # Query output
-├── PROJECT_REPORT.md       # Complete project report (Projects #1 & #2)
-├── DESIGN.md               # Technical design documentation
-├── README.md               # This file
-├── docs/
-│   ├── erd.jpeg           # ER diagram
-│   └── queries/           # Query screenshots
-└── web/
-    ├── app.js             # Express application
-    ├── db.js              # Database connection
-    ├── seed_passwords.js  # Password hashing utility
-    ├── package.json       # Dependencies
-    ├── views/             # EJS templates
-    └── public/            # CSS and static assets
-```
-
 ---
 
 ## (a) Design and Justify an Appropriate Database Schema

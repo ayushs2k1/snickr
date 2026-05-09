@@ -476,6 +476,5 @@ Navigate to `http://localhost:3000` and login with:
 
 ## Authors
 
-CS6083 Database Systems Project  
-NYU Tandon School of Engineering  
-Spring 2026
+@Subhradeep246
+@ayushs2k1

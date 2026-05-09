@@ -1,7 +1,8 @@
-# snickr — Database Design Report
+# snickr — Database Design and Web Application
 
-**Course:** CS6083, Spring 2026 — Project #1
-**Due:** April 27, 2026
+**Course:** CS6083, Spring 2026  
+**Project #1:** Database Design (Due: April 27, 2026)  
+**Project #2:** Web Application (Due: May 8, 2026)
 
 ---
 
@@ -9,7 +10,72 @@
 
 Snickr is a Slack-like collaboration platform where users sign up with an email, choose a username and password, then create or join workspaces. Inside a workspace, members create channels of three kinds: public, private, and direct. Messages are exchanged chronologically within these channels.
 
-This document addresses project requirements (a) through (e) as specified in the assignment.
+**Project #1** addresses database schema design and SQL queries (requirements a-e).  
+**Project #2** implements a web-based frontend with Node.js, Express, and EJS templates.
+
+For the complete project report covering both parts, see [`PROJECT_REPORT.md`](PROJECT_REPORT.md).  
+For technical design documentation, see [`DESIGN.md`](DESIGN.md).
+
+---
+
+## Quick Start
+
+### Prerequisites
+- PostgreSQL 14+
+- Node.js 16+
+- npm
+
+### Database Setup
+```bash
+createdb snickr
+psql -d snickr -v ON_ERROR_STOP=1 -f schema.sql
+psql -d snickr -v ON_ERROR_STOP=1 -f sample_data.sql
+```
+
+### Load Test Data and Hash Passwords
+```bash
+# Sample data inserts placeholder password hashes
+# Run this script to update them with real bcrypt hashes
+cd web
+npm install
+node seed_passwords.js
+```
+
+All test users (alice, bob, carol, dave, eve, frank) will have password: `password`
+
+### Run Web Application
+```bash
+cd web
+node app.js
+```
+
+Navigate to `http://localhost:3000` and login with any test user.
+
+---
+
+## Project Structure
+
+```
+snickr/
+├── schema.sql              # Database schema (Project #1)
+├── sample_data.sql         # Test data
+├── queries.sql             # 7 required queries
+├── test_queries.sql        # Query validation
+├── test_results.txt        # Query output
+├── PROJECT_REPORT.md       # Complete project report (Projects #1 & #2)
+├── DESIGN.md               # Technical design documentation
+├── README.md               # This file
+├── docs/
+│   ├── erd.jpeg           # ER diagram
+│   └── queries/           # Query screenshots
+└── web/
+    ├── app.js             # Express application
+    ├── db.js              # Database connection
+    ├── seed_passwords.js  # Password hashing utility
+    ├── package.json       # Dependencies
+    ├── views/             # EJS templates
+    └── public/            # CSS and static assets
+```
 
 ---
 
@@ -338,9 +404,78 @@ The 6-user, 2-workspace, 5-named-channel test set covers all edge cases required
 
 ## How to Reproduce
 
+### Database Setup and Query Testing (Project #1)
+
 ```bash
 createdb snickr
 psql -d snickr -v ON_ERROR_STOP=1 -f schema.sql
 psql -d snickr -v ON_ERROR_STOP=1 -f sample_data.sql
 psql -d snickr -v ON_ERROR_STOP=1 -f test_queries.sql | tee test_results.txt
 ```
+
+### Web Application Setup (Project #2)
+
+```bash
+# Install dependencies
+cd web
+npm install
+
+# Hash passwords for test users
+node seed_passwords.js
+
+# Start the application
+node app.js
+```
+
+Navigate to `http://localhost:3000` and login with:
+- **Username:** alice, bob, carol, dave, eve, or frank
+- **Password:** password
+
+---
+
+## Documentation
+
+- **[PROJECT_REPORT.md](PROJECT_REPORT.md)** - Complete project report covering database design (Project #1) and web application (Project #2)
+- **[DESIGN.md](DESIGN.md)** - Technical design documentation with architecture, security measures, and implementation decisions
+- **[schema.sql](schema.sql)** - Complete database schema with constraints and indexes
+- **[queries.sql](queries.sql)** - Seven required SQL queries
+- **[sample_data.sql](sample_data.sql)** - Test data covering all edge cases
+
+---
+
+## Features
+
+**Database (Project #1):**
+- Normalized schema in 3NF
+- Email-based workspace invitations
+- Three channel types (public, private, direct)
+- Access control enforced at SQL level
+- Full-text search with authorization
+
+**Web Application (Project #2):**
+- User registration and authentication
+- Workspace and channel management
+- Real-time message posting
+- Keyword search across accessible messages
+- Invitation system with accept/decline
+- Password reset functionality
+- SQL injection and XSS prevention
+- Slack-inspired UI design
+
+---
+
+## Security Measures
+
+- **SQL Injection Prevention:** Parameterized queries using pg library
+- **XSS Prevention:** EJS auto-escaping for all user content
+- **Password Security:** bcrypt hashing with cost factor 12
+- **Session Security:** httpOnly cookies with 24-hour expiration
+- **Concurrency Control:** Database transactions for multi-step operations
+
+---
+
+## Authors
+
+CS6083 Database Systems Project  
+NYU Tandon School of Engineering  
+Spring 2026

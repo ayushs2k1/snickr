@@ -1,9 +1,5 @@
 # snickr — Database Design and Web Application
 
-**Course:** CS6083, Spring 2026  
-**Project #1:** Database Design (Due: April 27, 2026)  
-**Project #2:** Web Application (Due: May 8, 2026)
-
 ---
 
 ## Overview
@@ -12,8 +8,7 @@ Snickr is a Slack-like collaboration platform where users sign up with an email,
 
 **Project #1** addresses database schema design and SQL queries (requirements a-e).  
 **Project #2** implements a web-based frontend with Node.js, Express, and EJS templates.
-
-For the complete project report covering both parts, see [`PROJECT_REPORT.md`](PROJECT_REPORT.md).  
+  
 For technical design documentation, see [`DESIGN.md`](DESIGN.md).
 
 ---
@@ -49,7 +44,7 @@ cd web
 node app.js
 ```
 
-Navigate to `http://localhost:3000` and login with any test user.
+Navigate to your localhost and login with any test user.
 
 ---
 
@@ -101,7 +96,7 @@ The data model centers on four core entities:
 
 #### ER Diagram
 
-![snickr ER diagram](docs/er_diagram.jpeg)
+![snickr ER diagram](docs/erd.jpeg)
 
 <details>
 <summary>Mermaid source</summary>
